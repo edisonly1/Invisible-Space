@@ -19,12 +19,14 @@ export async function GET() {
     const startDateStr = startDate.toISOString().split("T")[0]
     const endDateStr = endDate.toISOString().split("T")[0]
 
+    const apiKey = process.env.NASA_DONKI_API_KEY || "9YZv0WxJ982HsNHoxu0dNtR9UKj9nhtdlKwpplEa"
+
     // Fetch solar flares and CMEs
     const [flareResponse, cmeResponse] = await Promise.all([
-      fetch(`https://api.nasa.gov/DONKI/FLR?startDate=${startDateStr}&endDate=${endDateStr}&api_key=DEMO_KEY`, {
+      fetch(`https://api.nasa.gov/DONKI/FLR?startDate=${startDateStr}&endDate=${endDateStr}&api_key=${apiKey}`, {
         next: { revalidate: 120 },
       }),
-      fetch(`https://api.nasa.gov/DONKI/CME?startDate=${startDateStr}&endDate=${endDateStr}&api_key=DEMO_KEY`, {
+      fetch(`https://api.nasa.gov/DONKI/CME?startDate=${startDateStr}&endDate=${endDateStr}&api_key=${apiKey}`, {
         next: { revalidate: 120 },
       }),
     ])
