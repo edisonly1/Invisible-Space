@@ -31,7 +31,7 @@ export function Sidebar() {
         <div>
           <p className="text-sm font-medium text-sidebar-foreground">City: Atlanta</p>
           <select disabled className="mt-1 text-xs text-muted-foreground bg-transparent border-none">
-            <option>Atlanta (coming soon)</option>
+            <option>Atlanta</option>
           </select>
         </div>
 

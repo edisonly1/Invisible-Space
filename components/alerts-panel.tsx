@@ -34,7 +34,24 @@ export function AlertsPanel() {
   }, [])
 
   const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString([], {
+    if (!timestamp) return "Unknown time"
+
+    const date = new Date(timestamp)
+    if (isNaN(date.getTime())) {
+      // Try parsing ISO format with 'Z' suffix if missing
+      const isoDate = new Date(timestamp.endsWith("Z") ? timestamp : timestamp + "Z")
+      if (isNaN(isoDate.getTime())) {
+        return "Invalid date"
+      }
+      return isoDate.toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    }
+
+    return date.toLocaleString([], {
       month: "short",
       day: "numeric",
       hour: "2-digit",

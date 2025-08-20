@@ -37,11 +37,13 @@ export async function GET() {
     if (flareResponse.ok) {
       const flares: DonkiEvent[] = await flareResponse.json()
       for (const flare of flares.slice(0, 4)) {
-        alerts.push({
-          type: `Solar Flare ${flare.classType || "Unknown"}`,
-          time: flare.beginTime,
-          text: `Active region ${flare.sourceLocation || "unknown"}${flare.note ? `, ${flare.note.substring(0, 50)}...` : ""}`,
-        })
+        if (flare.beginTime) {
+          alerts.push({
+            type: `Solar Flare ${flare.classType || "Unknown"}`,
+            time: flare.beginTime,
+            text: `Active region ${flare.sourceLocation || "unknown"}${flare.note ? `, ${flare.note.substring(0, 50)}...` : ""}`,
+          })
+        }
       }
     }
 
@@ -49,17 +51,24 @@ export async function GET() {
     if (cmeResponse.ok) {
       const cmes: DonkiEvent[] = await cmeResponse.json()
       for (const cme of cmes.slice(0, 4)) {
-        const speed = cme.cmeAnalyses?.[0]?.speed
-        alerts.push({
-          type: "Coronal Mass Ejection",
-          time: cme.beginTime,
-          text: `${speed ? `~${Math.round(speed)} km/s` : "Speed unknown"}${cme.note ? `, ${cme.note.substring(0, 50)}...` : ""}`,
-        })
+        if (cme.beginTime) {
+          const speed = cme.cmeAnalyses?.[0]?.speed
+          alerts.push({
+            type: "Coronal Mass Ejection",
+            time: cme.beginTime,
+            text: `${speed ? `~${Math.round(speed)} km/s` : "Speed unknown"}${cme.note ? `, ${cme.note.substring(0, 50)}...` : ""}`,
+          })
+        }
       }
     }
 
     // Sort by time (most recent first)
-    alerts.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+    alerts.sort((a, b) => {
+      const dateA = new Date(a.time)
+      const dateB = new Date(b.time)
+      if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0
+      return dateB.getTime() - dateA.getTime()
+    })
 
     return NextResponse.json({ alerts: alerts.slice(0, 8) })
   } catch (error) {
