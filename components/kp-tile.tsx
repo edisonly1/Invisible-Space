@@ -1,49 +1,56 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { fetchKpData } from "@/lib/swpc"
 
-export const revalidate = 60
+interface KpData {
+  kp: number | null
+  updated: string | null
+}
 
-export async function KpTile() {
-  let kp: number | null = null
-  let time: string | null = null
-  let station: string | undefined
+export function KpTile() {
+  const [data, setData] = useState<KpData>({ kp: null, updated: null })
+  const [loading, setLoading] = useState(true)
 
-  try {
-    const data = await fetchKpData()
-    kp = data.kp
-    time = data.time
-    station = (data as any).station // "FRD" when using Atlanta proxy
-  } catch (error) {
-    console.error("Failed to fetch K data:", error)
-  }
+  useEffect(() => {
+    const fetchKp = async () => {
+      try {
+        const response = await fetch("/api/kp")
+        if (response.ok) {
+          const kpData = await response.json()
+          setData(kpData)
+        }
+      } catch (error) {
+        console.error("Failed to fetch Kp data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const formatTimeEDT = (timestamp: string | null) => {
+    fetchKp()
+    const interval = setInterval(fetchKp, 60000) // Revalidate every 60s
+    return () => clearInterval(interval)
+  }, [])
+
+  const formatTime = (timestamp: string | null) => {
     if (!timestamp) return "—"
-    return new Date(timestamp).toLocaleTimeString("en-US", {
-      hour: "numeric",
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
       minute: "2-digit",
-      timeZone: "America/New_York",
-      timeZoneName: "short", // shows EDT/EST
     })
   }
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">
-          {station ? "K Index — Atlanta (FRD)" : "Kp Index"}
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">Updated {formatTimeEDT(time)}</p>
+        <CardTitle className="text-lg">Kp Index</CardTitle>
+        <p className="text-xs text-muted-foreground">Updated {formatTime(data.updated)}</p>
       </CardHeader>
       <CardContent>
-        <div className="text-4xl font-bold mb-2">
-          {kp !== null ? (station ? kp.toFixed(0) : kp.toFixed(2)) : "—"}
+        <div className="text-4xl font-bold mb-2" aria-live="polite">
+          {loading ? "—" : (data.kp ?? "—")}
         </div>
-        <p className="text-sm text-muted-foreground">
-          {station
-            ? "Local proxy from Fredericksburg station (3-hour K)."
-            : "Kp≥5 implies possible aurora visibility at mid-latitudes."}
-        </p>
+        <p className="text-sm text-muted-foreground">Kp≥5 implies possible aurora visibility at mid-latitudes</p>
       </CardContent>
     </Card>
   )

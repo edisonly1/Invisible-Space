@@ -1,31 +1,32 @@
 import { NextResponse } from "next/server"
-import { fetchKpData } from "@/lib/swpc"
-
-export const runtime = "nodejs"
-export const revalidate = 0
-export const dynamic = "force-dynamic"
 
 export async function GET() {
-  const headers = {
-    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
-  }
-
   try {
-    const { kp, time } = await fetchKpData()
+    // Fetch from NOAA SWPC 1-minute Kp data
+    const response = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json", {
+      next: { revalidate: 60 },
+    })
 
-    return NextResponse.json(
-      {
-        kp,
-        time,
-        source: "noaa-estimated-planetary-k-index-1-minute.json",
-      },
-      { headers },
-    )
+    if (!response.ok) {
+      throw new Error("Failed to fetch Kp data")
+    }
+
+    const data = await response.json()
+
+    // Get the most recent Kp value (last 3 hours max)
+    const recent = data.slice(-180) // Last 3 hours of 1-minute data
+    const latestEntry = recent[recent.length - 1]
+
+    if (!latestEntry) {
+      return NextResponse.json({ kp: null, updated: null })
+    }
+
+    const kp = Number.parseFloat(latestEntry[1])
+    const updated = new Date(latestEntry[0]).toISOString()
+
+    return NextResponse.json({ kp, updated })
   } catch (error) {
     console.error("Kp API error:", error)
-    return NextResponse.json(
-      { kp: null, time: null, source: "noaa-estimated-planetary-k-index-1-minute.json" },
-      { headers },
-    )
+    return NextResponse.json({ kp: null, updated: null })
   }
 }
