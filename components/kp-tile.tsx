@@ -1,36 +1,19 @@
-"use client"
-
-import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { fetchKpData } from "@/lib/swpc"
 
-interface KpData {
-  kp: number | null
-  updated: string | null
-}
+export const revalidate = 60
 
-export function KpTile() {
-  const [data, setData] = useState<KpData>({ kp: null, updated: null })
-  const [loading, setLoading] = useState(true)
+export async function KpTile() {
+  let kp: number | null = null
+  let time: string | null = null
 
-  useEffect(() => {
-    const fetchKp = async () => {
-      try {
-        const response = await fetch("/api/kp")
-        if (response.ok) {
-          const kpData = await response.json()
-          setData(kpData)
-        }
-      } catch (error) {
-        console.error("Failed to fetch Kp data:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchKp()
-    const interval = setInterval(fetchKp, 60000) // Revalidate every 60s
-    return () => clearInterval(interval)
-  }, [])
+  try {
+    const data = await fetchKpData()
+    kp = data.kp
+    time = data.time
+  } catch (error) {
+    console.error("Failed to fetch Kp data:", error)
+  }
 
   const formatTime = (timestamp: string | null) => {
     if (!timestamp) return "—"
@@ -44,13 +27,11 @@ export function KpTile() {
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Kp Index</CardTitle>
-        <p className="text-xs text-muted-foreground">Updated {formatTime(data.updated)}</p>
+        <p className="text-xs text-muted-foreground">Updated {formatTime(time)}</p>
       </CardHeader>
       <CardContent>
-        <div className="text-4xl font-bold mb-2" aria-live="polite">
-          {loading ? "—" : (data.kp ?? "—")}
-        </div>
-        <p className="text-sm text-muted-foreground">Kp≥5 implies possible aurora visibility at mid-latitudes</p>
+        <div className="text-4xl font-bold mb-2">{kp !== null ? kp.toFixed(2) : "—"}</div>
+        <p className="text-sm text-muted-foreground">Kp≥5 implies possible aurora visibility at mid-latitudes.</p>
       </CardContent>
     </Card>
   )
