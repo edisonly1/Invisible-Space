@@ -43,7 +43,7 @@ export function KpTile() {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Kp Index</CardTitle>
+        <CardTitle className="text-lg">Estimated planetary Kp</CardTitle>
         <p className="text-xs text-muted-foreground">Updated {formatTime(data.updated)}</p>
       </CardHeader>
       <CardContent>
